@@ -3,5 +3,5 @@
 if [ "$(pgrep openvpn)" ]; then
     echo ""
 else
-    echo ""
+    echo ""
 fi
