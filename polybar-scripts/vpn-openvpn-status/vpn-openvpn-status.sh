@@ -1,9 +1,11 @@
 #!/bin/env bash
 IFS=$'\n'
+out=""
 if [[ ! "$1" =~ "-noprefix" ]]; then
-    printf "VPNs: "
-fi
+    out="VPNs:";
+fi;
 for process in $(pgrep -a openvpn$); do
-    echo $process | grep -Po '(?<=--remote\ )(\S*)|(?<=--config\ /etc/openvpn/)([A-Za-z0-9_\-]*)(?=\.conf|\.ovpn)|(?<=--config\ )([A-Za-z0-9_\-]*)(?=\.conf|\.ovpn)';
+    out="$out $(echo $process | grep -Po '(?<=--remote\ )(\S*)|(?<=--config\ /etc/openvpn/)([A-Za-z0-9_\-]*)(?=\.conf|\.ovpn)|(?<=--config\ )([A-Za-z0-9_\-]*)(?=\.conf|\.ovpn)')"
 done
+echo $out
 unset IFS
