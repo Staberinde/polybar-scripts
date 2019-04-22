@@ -4,7 +4,7 @@ usb_print() {
     output=""
     counter=0
     # based on https://unix.stackexchange.com/questions/119759/removable-usb-stick-listed-as-non-removable-in-sys-block
-    USBSTORAGE=$(
+    usbstorage=$(
         echo /sys/block/* | xargs -n1 readlink |
         sed -ne 's+^.*/usb[0-9].*/\([^/]*\)$+/sys/block/\1/device/uevent+p' |
         xargs grep -H ^DRIVER=sd |
@@ -13,6 +13,11 @@ usb_print() {
         cut -d / -f 4 |
         xargs -I{} echo '/dev/{}'
     )
+
+    if [[ ${usbstorage} == "" ]]; then
+        return 0
+    fi
+
     devices="$(lsblk -Jplno NAME,TYPE,RM,SIZE,MOUNTPOINT,VENDOR ${USBSTORAGE[*]})"
 
     for unmounted in $(echo "$devices" | jq -r '.blockdevices[] | select(.type == "part") | select(.mountpoint == null) | .name'); do
