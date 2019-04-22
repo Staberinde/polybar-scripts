@@ -70,7 +70,7 @@ case "$1" in
 
             mountpoint=$(udisksctl mount --no-user-interaction -b "$mount")
             mountpoint=$(echo "$mountpoint" | cut -d " " -f 4 | tr -d ".")
-            termite -e "bash -lc 'mc $mountpoint'" &
+            bash -lc 'mc $mountpoint' &
         done
 
         usb_update
