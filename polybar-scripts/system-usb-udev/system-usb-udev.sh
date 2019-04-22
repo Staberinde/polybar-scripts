@@ -18,7 +18,7 @@ usb_print() {
         return 0
     fi
 
-    devices="$(lsblk -Jplno NAME,TYPE,RM,SIZE,MOUNTPOINT,VENDOR ${USBSTORAGE[*]})"
+    devices="$(lsblk -Jplno NAME,TYPE,RM,SIZE,MOUNTPOINT,VENDOR ${usbstorage[*]})"
 
     for unmounted in $(echo "$devices" | jq -r '.blockdevices[] | select(.type == "part") | select(.mountpoint == null) | .name'); do
         unmounted=$(echo "$unmounted" | tr -d "[:digit:]")
@@ -64,7 +64,21 @@ case "$1" in
         usb_update
         ;;
     --mount)
-        devices=$(lsblk -Jplno NAME,TYPE,RM,MOUNTPOINT)
+        usbstorage=$(
+            echo /sys/block/* | xargs -n1 readlink |
+            sed -ne 's+^.*/usb[0-9].*/\([^/]*\)$+/sys/block/\1/device/uevent+p' |
+            xargs grep -H ^DRIVER=sd |
+            sed 's/device.uevent.*$/size/' |
+            xargs grep -Hv '^0$' |
+            cut -d / -f 4 |
+            xargs -I{} echo '/dev/{}'
+        )
+
+        if [[ ${usbstorage} == "" ]]; then
+            return 0
+        fi
+
+        devices="$(lsblk -Jplno NAME,TYPE,RM,SIZE,MOUNTPOINT,VENDOR ${usbstorage[*]})"
 
         for mount in $(echo "$devices" | jq -r '.blockdevices[] | select(.type == "part") | select(.mountpoint == null) | .name'); do
             # udisksctl mount --no-user-interaction -b "$mount"
@@ -75,13 +89,27 @@ case "$1" in
 
             mountpoint=$(udisksctl mount --no-user-interaction -b "$mount")
             mountpoint=$(echo "$mountpoint" | cut -d " " -f 4 | tr -d ".")
-            bash -lc 'mc $mountpoint' &
+            termite -e "bash -lc 'mc $mountpoint'" &
         done
 
         usb_update
         ;;
     --unmount)
-        devices=$(lsblk -Jplno NAME,TYPE,RM,MOUNTPOINT)
+        usbstorage=$(
+            echo /sys/block/* | xargs -n1 readlink |
+            sed -ne 's+^.*/usb[0-9].*/\([^/]*\)$+/sys/block/\1/device/uevent+p' |
+            xargs grep -H ^DRIVER=sd |
+            sed 's/device.uevent.*$/size/' |
+            xargs grep -Hv '^0$' |
+            cut -d / -f 4 |
+            xargs -I{} echo '/dev/{}'
+        )
+
+        if [[ ${usbstorage} == "" ]]; then
+            return 0
+        fi
+
+        devices="$(lsblk -Jplno NAME,TYPE,RM,SIZE,MOUNTPOINT,VENDOR ${usbstorage[*]})"
 
         for unmount in $(echo "$devices" | jq -r '.blockdevices[] | select(.type == "part") | select(.mountpoint != null) | .name'); do
             udisksctl unmount --no-user-interaction -b "$unmount"
