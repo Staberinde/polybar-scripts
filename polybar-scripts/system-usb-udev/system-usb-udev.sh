@@ -18,7 +18,7 @@ usb_print() {
         return 0
     fi
 
-    devices="$(lsblk -Jplno NAME,TYPE,RM,SIZE,MOUNTPOINT,VENDOR ${USBSTORAGE[*]})"
+    devices="$(lsblk -Jplno NAME,TYPE,RM,SIZE,MOUNTPOINT,VENDOR ${usbstorage[*]})"
 
     for unmounted in $(echo "$devices" | jq -r '.blockdevices[] | select(.type == "part") | select(.mountpoint == null) | .name'); do
         unmounted=$(echo "$unmounted" | tr -d "[:digit:]")
