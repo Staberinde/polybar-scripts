@@ -4,8 +4,8 @@ out=""
 if [[ ! "$1" =~ "-noprefix" ]]; then
     out="VPNs:";
 fi;
-for process in $(pgrep -a openvpn$); do
-    out="$out $(echo $process | grep -Po '(?<=--remote\ )(\S*)|(?<=--config\ /etc/openvpn/)([A-Za-z0-9_\-]*)(?=\.conf|\.ovpn)|(?<=--config\ )([A-Za-z0-9_\-]*)(?=\.conf|\.ovpn)')"
+for process in $(pgrep -a 'openvpn$'); do
+    out="$out $(echo \\"$process\\" | grep -Po '(?<=--remote\ )(\S*)|(?<=--config\ /etc/openvpn/)(.*)(?=\.conf|\.ovpn)|(?<=--config\ )(.*)(?=\.conf|\.ovpn)')"
 done
-echo $out
+echo "$out"
 unset IFS
