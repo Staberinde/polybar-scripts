@@ -1,20 +1,15 @@
 #!/bin/sh
 
 network_print() {
-    CONNECTION_LIST=$(nmcli -t -f name,type,device,state connection show --active 2>/dev/null)
-    CONNECTION_COUNT=$(nmcli -t -f name connection show --active | wc -l 2>/dev/null)
-
-    output=""
+    connection_list=$(nmcli -t -f name,type,device,state connection show --order name --active 2>/dev/null | grep -v ':bridge:')
     counter=0
 
-    if [ "$CONNECTION_COUNT" -ne 0 ]; then
-        for connection in $CONNECTION_LIST; do
-            counter=$((counter + 1))
-
-            description=$(echo "$connection" | cut -d ':' -f 1)
-            type=$(echo "$connection" | cut -d ':' -f 2)
-            device=$(echo "$connection" | cut -d ':' -f 3)
-            state=$(echo "$connection" | cut -d ':' -f 4)
+    if [ -n "$connection_list" ] && [ "$(echo "$connection_list" | wc -l)" -gt 0  ]; then
+        echo "$connection_list" | while read -r line; do
+            description=$(echo "$line" | cut -d ':' -f 1)
+            type=$(echo "$line" | cut -d ':' -f 2)
+            device=$(echo "$line" | cut -d ':' -f 3)
+            state=$(echo "$line" | cut -d ':' -f 4)
 
             if [ "$state" = "activated" ]; then
                 if [ "$type" = "802-11-wireless" ]; then
@@ -24,7 +19,7 @@ network_print() {
                     if [ "$signal" -lt 40 ]; then
                         description="$description - %{F#f9cc18}$signal%%{F-}"
                     fi
-                else
+                elif [ "$type" = "802-3-ethernet" ]; then
                     icon="#2"
 
                     speed="$(cat /sys/class/net/"$device"/speed)"
@@ -38,20 +33,20 @@ network_print() {
                         speed="?"
                     fi
 
-                    description="$description - $speed"
+                    description="$description ($speed)"
                 fi
-
-                if [ "$CONNECTION_COUNT" -ne $counter ]; then
-                    spacer="     "
-                else
-                    spacer=""
-                fi
-
-                output="$output$icon $description$spacer"
             fi
+
+            if [ $counter -gt 0 ]; then
+                printf "  %s %s" "$icon" "$description"
+            else
+                printf "%s %s" "$icon" "$description"
+            fi
+
+            counter=$((counter + 1))
         done
 
-        echo "$output"
+        printf "\n"
     else
         echo "#3"
     fi
@@ -65,7 +60,7 @@ network_update() {
     fi
 }
 
-path_pid="/home/user/.config/polybar/network-networkmanager.pid"
+path_pid="/tmp/polybar-network-networkmanager.pid"
 
 case "$1" in
     --update)
